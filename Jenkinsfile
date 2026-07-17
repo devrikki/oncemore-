@@ -2,21 +2,31 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
+
+        stage('Checkout') {
             steps {
-                echo "Building Application..."
+                echo 'Source downloaded'
             }
         }
 
-        stage('Test') {
+        stage('Verify') {
             steps {
-                echo "Running Tests..."
+                sh 'ls -la'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Deploying Application..."
+                sh '''
+                rsync -av --delete ./ root@192.168.89.131:/var/lib/docker/volumes/volume/_data/
+                '''
+            }
+        }
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                curl -f http://192.168.89.131:8080
+                '''
             }
         }
     }
