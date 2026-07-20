@@ -1,33 +1,49 @@
 pipeline {
     agent any
 
-    stages {
+    environment {
+        APP_NAME = "my-app"
+    }
 
+    stages {
         stage('Checkout') {
             steps {
-                echo 'Source downloaded'
+                checkout scm
             }
         }
 
-        stage('Verify') {
+        stage('Build') {
             steps {
-                sh 'ls -la'
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
             }
         }
 
         stage('Deploy') {
+            when {
+                branch 'main'
+            }
             steps {
-                sh '''
-                rsync -av --delete ./ root@192.168.89.131:/var/lib/docker/volumes/volume/_data/
-                '''
+                echo "Deploying ${APP_NAME}"
+                sh './deploy.sh'
             }
         }
-        stage('Verify Deployment') {
-            steps {
-                sh '''
-                curl -f http://192.168.89.131:8080
-                '''
-            }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+        }
+        success {
+            echo 'Build completed successfully!'
+        }
+        failure {
+            echo 'Build failed!'
         }
     }
 }
